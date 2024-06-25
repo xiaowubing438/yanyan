@@ -1,0 +1,101 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" />
+    <title>ParticleSlider</title>
+    <style>
+      html,
+      body {
+        background-color: #fff;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+
+        .slides,
+        & > .dg {
+          display: none;
+        }
+      }
+
+      @media (min-width: 1000px) {
+        body {
+          background-image: url("./image/下载.png");
+          background-repeat: no-repeat;
+
+          & > .dg {
+            display: block;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body id="particle-slider">
+    <div class="slides">
+      <div id="first-slide" class="slide" data-src="./image/1.png"></div>
+    </div>
+    <canvas class="draw"></canvas>
+  </body>
+
+  <script>
+    var indexN = 1;
+    var init = function () {
+      var isMobile =
+        navigator.userAgent &&
+        navigator.userAgent.toLowerCase().indexOf("mobile") >= 0;
+      var isSmall = window.innerWidth < 1000;
+
+      var ps = new ParticleSlider({
+        ptlGap: 1,
+        ptlSize: 1,
+        width: 1e9 * 2,
+        height: 1e9 * 2,
+        mouseForce: 0, // 鼠标作用力
+      });
+
+      window.addEventListener
+        ? window.addEventListener(
+            "click",
+            function () {
+              var dom = document.getElementById("first-slide");
+              indexN++;
+              if (indexN === 6) {
+                indexN = 1;
+              }
+              dom.setAttribute("data-src", `./image/${indexN}.png`);
+
+              ps.imgs[0].src = `./image/${indexN}.png`;
+              ps.init(true);
+            },
+            false
+          )
+        : (window.onclick = function () {
+            var dom = document.getElementById("first-slide");
+            indexN++;
+            if (indexN === 6) {
+              indexN = 1;
+            }
+            dom.setAttribute("data-src", `./image/${indexN}.png`);
+
+            ps.imgs[0].src = `./image/${indexN}.png`;
+
+            ps.init(true);
+          });
+    };
+
+    var initParticleSlider = (function () {
+      var psScript = document.createElement("script");
+      psScript.addEventListener
+        ? psScript.addEventListener("load", init, false)
+        : (psScript.onload = init);
+      psScript.src =
+        "https://s3-us-west-2.amazonaws.com/s.cdpn.io/23500/ps-0.9.js";
+      psScript.setAttribute("type", "text/javascript");
+      document.body.appendChild(psScript);
+    })(
+      window.addEventListener
+        ? window.addEventListener("load", initParticleSlider, false)
+        : (window.onload = initParticleSlider)
+    );
+  </script>
+</html>
