@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <script src="./js/Three.js"></script>
+    <script src="./js/OrbitControls.js"></script>
+    <script src="./js/MMDParser.js"></script>
+    <script src="./js/OutlineEffect.js"></script>
+    <script src="./js/MMDToonShader.js"></script>
+    <script src="./js/MMDLoader.js"></script>
+    <script src="./js/CCDIKSolver.js"></script>
+    <script src="./js/MMDPhysics.js"></script>
+    <script src="./js/ammo.wasm.js"></script>
+    <script src="./js/MMDAnimationHelper.js"></script>
+
+
+    <script>
+
+        Ammo().then( function (AmmoLib ) {
+
+            Ammo = AmmoLib;
+
+            // console.log('THREE', THREE);
+    
+            // console.log('OrbitControls', THREE.OrbitControls);
+    
+            // console.log('MMDLoader', THREE.MMDLoader);
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            const listener = new THREE.AudioListener();
+            camera.add( listener );
+
+            scene.add(camera)
+
+            var renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                // logarithmicDepthBuffer: true,
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // renderer.setClearColor(0xFFFFFF); // 设置场景背景色
+            renderer.shadowMap.enabled = true
+            renderer.setPixelRatio( window.devicePixelRatio );
+            // renderer.outputEncoding = THREE.sRGBEncoding;
+    
+            camera.position.set(0, 20, -50);
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.update();
+            
+            const clock = new THREE.Clock();
+            document.body.appendChild(renderer.domElement);
+    
+            // var geometry = new THREE.BoxGeometry(1, 1, 1);
+            // var material = new THREE.MeshLambertMaterial({ color: 0x00ff00 }); // MeshBasicMaterial基础网格材质不受光照影响
+            // var cube = new THREE.Mesh(geometry, material);
+            // cube.castShadow = true
+            // cube.receiveShadow = true
+            // scene.add(cube);
+    
+            var light = new THREE.AmbientLight(0xF8F5EF); // soft white light
+            light.position.set(0, 0, -500);
+            scene.add(light);
+
+            // const spotLight = new THREE.SpotLight( 0xffffff );
+            // spotLight.position.set( 100, 1000, 100 );
+            // spotLight.castShadow = true;
+            // spotLight.shadow.mapSize.width = 1024;
+            // spotLight.shadow.mapSize.height = 1024;
+            // spotLight.shadow.camera.near = 500;
+            // spotLight.shadow.camera.far = 4000;
+            // spotLight.shadow.camera.fov = 30;
+            // scene.add( spotLight );
+
+            // var light = new THREE.DirectionalLight(0xF8F5EF, 0.1, 5);
+            // light.position.set(10, 10, -500);
+            // scene.add(light);
+    
+            // var spotLight = new THREE.PointLight(0xEED8AD)
+            // spotLight.position.set(0, 0, -10);
+            // scene.add(spotLight)
+
+            var helper = new THREE.MMDAnimationHelper({
+                afterglow: 2.0
+            });
+    
+            var loader = new THREE.MMDLoader();
+            var pmxFile = './pmx/shenli/shenli.pmx'
+            // var pmxFile = 'http://127.0.0.1:5500/pmx/xiaogong/xiaogong.pmx'
+            // var vmdFile = 'http://127.0.0.1:5500/vmd/motion.vmd'
+            // var vmdFile = 'http://127.0.0.1:5500/vmd/122 (3).vmd'
+            var vmdFile = './vmd/Im Feeling Good.vmd'
+
+            var audioFile = './vmd/test.mp3'
+
+            // loader.loadWithAnimation( 'http://127.0.0.1:5500/pmx/shen.pmx', vmdFile, function ( object ) {
+            //     console.log('object', object);
+            //     var mesh = object.mesh
+            //     mesh.position.y = - 10;
+            //     mesh.rotation.y = 60;
+            //     mesh.castShadow = false
+            //     scene.add(mesh);
+                
+            //     helper.add(mesh, {
+            //         animation: object.animation,
+            //         physics: true
+            //     });
+            // })
+            var ready = false
+
+            loader.load(pmxFile, function(mesh) {
+                console.log('mesh', mesh);
+                mesh.rotation.y = Math.PI
+                // mesh.position.y = -10;
+                // mesh.rotation.y = 59.8;
+                mesh.castShadow = false
+
+                loader.loadVMD(vmdFile, function(vmd) {
+                    console.log('vmd', vmd);
+
+                    var animation = loader.animationBuilder.build( vmd, mesh )
+                    helper.add(mesh, {
+                        animation: animation,
+                        physics: true
+                    });
+                })
+                
+                var cameraFile = './vmd/Camera.vmd'
+                loader.loadAnimation(cameraFile, camera, function ( cameraAnimation ) {
+                    // helper.add(camera, {
+                    //     animation: cameraAnimation
+                    // });
+
+                    new THREE.AudioLoader().load( audioFile, function ( buffer ) {
+                        console.log(buffer);
+                        const audio = new THREE.Audio( listener ).setBuffer( buffer );
+                        const audioParams = { delayTime: 160 * 1 / 30 };
+                        helper.add( audio, audioParams );
+                        scene.add( mesh );
+                        ready = true;
+                    });
+                });
+            })
+
+            // 渲染场景和相机
+            renderer.render(scene, camera)
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                if ( ready ) {
+                    helper.update(clock.getDelta());
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+
+        });
+
+
+        
+    </script>
+</body>
+
+</html>
